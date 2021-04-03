@@ -17,7 +17,7 @@ static unsigned int pt_set_count = 0;
 /* Initialise la table des pages, et indique où envoyer le log des accès.  */
 void pt_init (FILE *log)
 {
-  for (unsigned int i; i < NUM_PAGES; i++)
+  for (unsigned int i=0; i < NUM_PAGES; i++)
     page_table[i].valid = false;
   pt_log = log;
 }
@@ -42,6 +42,7 @@ static void pt__set_entry (unsigned int page_number, unsigned int frame_number)
 {
   pt_set_count++;
   page_table[page_number].frame_number = frame_number;
+  page_table[page_number].valid = true;
 }
 
 /* Marque l'entrée de `page_number` dans la page table comme invalide.  */
