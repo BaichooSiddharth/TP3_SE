@@ -36,15 +36,45 @@ static void vmm_log_command (FILE *out, const char *command,
 	     page, offset, frame, paddress);
 }
 
+bool framesUsed[NUM_FRAMES];
+
+static int findFrameNumber(unsigned int page) {
+    int frameNumber = tlb_lookup(page, 0);
+    if (frameNumber < 0) {
+        frameNumber = pt_lookup(page);
+        if (frameNumber < 0) {
+            for (int i = 0; i < NUM_FRAMES; i++) {
+                if (framesUsed[i] == false) {
+                    frameNumber = i;
+                    framesUsed[i] = true;
+                    break;
+                }
+            }
+            pm_download_page(page, frameNumber);
+            tlb_add_entry(page, frameNumber, 0);
+            pt_set_entry(page, frameNumber);
+        }
+    }
+
+    return frameNumber;
+}
+
 /* Effectue une lecture à l'adresse logique `laddress`.  */
 char vmm_read (unsigned int laddress)
 {
   char c = '!';
   read_count++;
   /* ¡ TODO: COMPLÉTER ! */
+    unsigned int page = laddress / 256;
+    unsigned int offset = laddress % 256;
+
+    int frameNumber = findFrameNumber(page);
+
+    unsigned int physAddress = frameNumber * PAGE_FRAME_SIZE + offset;
+    c = pm_read(physAddress);
 
   // TODO: Fournir les arguments manquants.
-  vmm_log_command (stdout, "READING", laddress, 0, 0, 0, 0, c);
+  vmm_log_command (stdout, "READING", laddress, page, frameNumber, offset, physAddress, c);
   return c;
 }
 
@@ -53,9 +83,16 @@ void vmm_write (unsigned int laddress, char c)
 {
   write_count++;
   /* ¡ TODO: COMPLÉTER ! */
+    unsigned int page = laddress / 256;
+    unsigned int offset = laddress % 256;
+
+    int frameNumber = findFrameNumber(page);
+
+    unsigned int physAddress = frameNumber * PAGE_FRAME_SIZE + offset;
+    pm_write(physAddress, c);
 
   // TODO: Fournir les arguments manquants.
-  vmm_log_command (stdout, "WRITING", laddress, 0, 0, 0, 0, c);
+  vmm_log_command (stdout, "WRITING", laddress, page, frameNumber, offset, physAddress, c);
 }
 
 

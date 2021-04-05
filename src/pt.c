@@ -29,10 +29,8 @@ void pt_init (FILE *log)
 static int pt__lookup (unsigned int page_number)
 {
   if(page_table[page_number].valid){
-      pt_lookup_count++;
       return page_table[page_number].frame_number;
   }
-  pt_page_fault_count++;
   return -1;
 }
 
@@ -40,7 +38,6 @@ static int pt__lookup (unsigned int page_number)
  * pointe vers `frame_number`.  */
 static void pt__set_entry (unsigned int page_number, unsigned int frame_number)
 {
-  pt_set_count++;
   page_table[page_number].frame_number = frame_number;
   page_table[page_number].valid = true;
 }
