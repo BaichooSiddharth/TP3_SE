@@ -30,7 +30,7 @@ void pm_download_page (unsigned int page_number, unsigned int frame_number)
   int char_read;
   unsigned int start_pm = frame_number * PAGE_FRAME_SIZE;
   unsigned int start_bs = page_number * PAGE_FRAME_SIZE;
-  unsigned int end_bs = page_number+1 * PAGE_FRAME_SIZE;
+  unsigned int end_bs = (page_number+1) * PAGE_FRAME_SIZE;
   unsigned int size_backing_store = NUM_PAGES * PAGE_FRAME_SIZE;
   while(count < size_backing_store && count < end_bs){
       char_read = fgetc(pm_backing_store);
