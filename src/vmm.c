@@ -36,25 +36,41 @@ static void vmm_log_command (FILE *out, const char *command,
 	     page, offset, frame, paddress);
 }
 
-bool framesUsed[NUM_FRAMES];
+struct Frame {
+    unsigned int page;
+    int count;
+};
+struct Frame frames[NUM_FRAMES];
 
 static int findFrameNumber(unsigned int page) {
     int frameNumber = tlb_lookup(page, 0);
     if (frameNumber < 0) {
         frameNumber = pt_lookup(page);
         if (frameNumber < 0) {
+            // Page fault, finding the least used frame as the new host for the requested page
+            int leastUsedFrame = 0;
             for (int i = 0; i < NUM_FRAMES; i++) {
-                if (framesUsed[i] == false) {
-                    frameNumber = i;
-                    framesUsed[i] = true;
+                if (frames[i].count == 0) {
+                    leastUsedFrame = i;
                     break;
-                }
+                } else if (frames[i].count < frames[leastUsedFrame].count) leastUsedFrame = i;
             }
+            frameNumber = leastUsedFrame;
+
+            // If usage is detected, store page data in the backing store
+            if (frames[frameNumber].count > 0) {
+                pm_backup_page(leastUsedFrame, frames[frameNumber].page);
+                pt_unset_entry(frames[frameNumber].page);
+                frames[frameNumber].count = 0;
+            }
+
             pm_download_page(page, frameNumber);
             tlb_add_entry(page, frameNumber, 0);
             pt_set_entry(page, frameNumber);
+            frames[frameNumber].page = page;
         }
     }
+    frames[frameNumber].count++;
 
     return frameNumber;
 }
@@ -73,7 +89,6 @@ char vmm_read (unsigned int laddress)
     unsigned int physAddress = frameNumber * PAGE_FRAME_SIZE + offset;
     c = pm_read(physAddress);
 
-  // TODO: Fournir les arguments manquants.
   vmm_log_command (stdout, "READING", laddress, page, frameNumber, offset, physAddress, c);
   return c;
 }
@@ -91,7 +106,6 @@ void vmm_write (unsigned int laddress, char c)
     unsigned int physAddress = frameNumber * PAGE_FRAME_SIZE + offset;
     pm_write(physAddress, c);
 
-  // TODO: Fournir les arguments manquants.
   vmm_log_command (stdout, "WRITING", laddress, page, frameNumber, offset, physAddress, c);
 }
 

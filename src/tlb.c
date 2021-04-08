@@ -49,10 +49,11 @@ static void tlb__add_entry (unsigned int page_number,
                             unsigned int frame_number, bool readonly)
 {
   for(int i = 0; i < TLB_NUM_ENTRIES; i++){
-      if(!tlb_entries[i].page_number){
+      if(!tlb_entries[i].page_number || tlb_entries[i].frame_number == frame_number){
           tlb_entries[i].page_number = page_number;
-          tlb_entries[i].frame_number = frame_number;
+          tlb_entries[i].frame_number = (int) frame_number;
           tlb_entries[i].readonly = readonly;
+          break;
       }
   }
 }
