@@ -53,8 +53,7 @@ static void tlb__add_entry (unsigned int page_number,
                             unsigned int frame_number, bool readonly)
 {
     int bestEntryId = clockHand;
-    bool foundBestVictim = false;
-    bool foundGoodVictim = false;
+    bool foundBestVictim = false; bool foundGoodVictim = false; bool foundPoorVictim = false;
     for (int i = clockHand; i - clockHand < TLB_NUM_ENTRIES; i++) {
         int ri = i % TLB_NUM_ENTRIES; // Relative i
         if (!tlb_entries[ri].page_number || tlb_entries[ri].frame_number == frame_number) {
@@ -68,7 +67,8 @@ static void tlb__add_entry (unsigned int page_number,
             foundGoodVictim = true;
         } else if (!foundGoodVictim && tlb_entries[ri].readonly) {
             bestEntryId = ri;
-        } else {
+            foundPoorVictim = true;
+        } else if (!foundBestVictim && !foundGoodVictim && !foundPoorVictim) {
             tlb_entries[ri].referenced = false;
         }
     }
