@@ -114,8 +114,8 @@ struct buffer buffer_init ( int length ){
     return new;
 }
 */
-static int findFrameNumber(unsigned int page) {
-    int frameNumber = tlb_lookup(page, 0);
+static int findFrameNumber(unsigned int page, bool write) {
+    int frameNumber = tlb_lookup(page, write);
     if (frameNumber < 0) {
         frameNumber = pt_lookup(page);
         if (frameNumber < 0) {
@@ -138,9 +138,13 @@ static int findFrameNumber(unsigned int page) {
             }
 
             pm_download_page(page, frameNumber);
-            tlb_add_entry(page, frameNumber, 0);
+            tlb_add_entry(page, frameNumber, write);
             pt_set_entry(page, frameNumber);
             frames[frameNumber].page = page;
+            if (write) {
+                pt_set_readonly(page, false);
+                frames[frameNumber].dirty = true;
+            }
         }
     }
     frames[frameNumber].count++;
@@ -157,7 +161,7 @@ char vmm_read (unsigned int laddress)
     unsigned int page = laddress / 256;
     unsigned int offset = laddress % 256;
 
-    int frameNumber = findFrameNumber(page);
+    int frameNumber = findFrameNumber(page, false);
 
     unsigned int physAddress = frameNumber * PAGE_FRAME_SIZE + offset;
     c = pm_read(physAddress);
@@ -174,8 +178,7 @@ void vmm_write (unsigned int laddress, char c)
     unsigned int page = laddress / 256;
     unsigned int offset = laddress % 256;
 
-    int frameNumber = findFrameNumber(page);
-    frames[frameNumber].dirty = true;
+    int frameNumber = findFrameNumber(page, true);
 
     unsigned int physAddress = frameNumber * PAGE_FRAME_SIZE + offset;
     pm_write(physAddress, c);

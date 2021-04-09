@@ -11,6 +11,7 @@ struct tlb_entry
   unsigned int page_number;
   int frame_number;             /* Invalide si négatif.  */
   bool readonly : 1;
+  bool referenced : 1;
 };
 
 static FILE *tlb_log = NULL;
@@ -19,6 +20,8 @@ static struct tlb_entry tlb_entries[TLB_NUM_ENTRIES];
 static unsigned int tlb_hit_count = 0;
 static unsigned int tlb_miss_count = 0;
 static unsigned int tlb_mod_count = 0;
+
+int clockHand = 0; // Variable used for clock algorithm
 
 /* Initialise le TLB, et indique où envoyer le log des accès.  */
 void tlb_init (FILE *log)
@@ -37,6 +40,7 @@ static int tlb__lookup (unsigned int page_number, bool write)
   for(int i = 0; i < TLB_NUM_ENTRIES; i++) {
       if (tlb_entries[i].page_number == page_number) {
           tlb_entries[i].readonly = write;
+          tlb_entries[i].referenced = true;
           return tlb_entries[i].frame_number;
       }
   }
@@ -48,14 +52,32 @@ static int tlb__lookup (unsigned int page_number, bool write)
 static void tlb__add_entry (unsigned int page_number,
                             unsigned int frame_number, bool readonly)
 {
-  for(int i = 0; i < TLB_NUM_ENTRIES; i++){
-      if(!tlb_entries[i].page_number || tlb_entries[i].frame_number == frame_number){
-          tlb_entries[i].page_number = page_number;
-          tlb_entries[i].frame_number = (int) frame_number;
-          tlb_entries[i].readonly = readonly;
-          break;
-      }
-  }
+    int bestEntryId = clockHand;
+    bool foundBestVictim = false;
+    bool foundGoodVictim = false;
+    for (int i = clockHand; i - clockHand < TLB_NUM_ENTRIES; i++) {
+        int ri = i % TLB_NUM_ENTRIES; // Relative i
+        if (!tlb_entries[ri].page_number || tlb_entries[ri].frame_number == frame_number) {
+            bestEntryId = ri;
+            break;
+        } else if (tlb_entries[ri].readonly && !tlb_entries[ri].referenced) {
+            bestEntryId = ri;
+            foundBestVictim = true;
+        } else if (!foundBestVictim && !tlb_entries[ri].referenced) {
+            bestEntryId = ri;
+            foundGoodVictim = true;
+        } else if (!foundGoodVictim && tlb_entries[ri].readonly) {
+            bestEntryId = ri;
+        } else {
+            tlb_entries[ri].referenced = false;
+        }
+    }
+    clockHand = bestEntryId + 1;
+
+    tlb_entries[bestEntryId].page_number = page_number;
+    tlb_entries[bestEntryId].frame_number = (int) frame_number;
+    tlb_entries[bestEntryId].readonly = readonly;
+    tlb_entries[bestEntryId].referenced = true;
 }
 
 /******************** ¡ NE RIEN CHANGER CI-DESSOUS !  ******************/
