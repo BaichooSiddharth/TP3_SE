@@ -42,7 +42,7 @@ struct Frame {
     bool dirty;
 };
 struct Frame frames[NUM_FRAMES];
-
+/*
 struct node {
     unsigned int frame;
     unsigned int page;
@@ -113,7 +113,7 @@ struct buffer buffer_init ( int length ){
 
     return new;
 }
-
+*/
 static int findFrameNumber(unsigned int page) {
     int frameNumber = tlb_lookup(page, 0);
     if (frameNumber < 0) {
@@ -151,7 +151,7 @@ static int findFrameNumber(unsigned int page) {
 /* Effectue une lecture à l'adresse logique `laddress`.  */
 char vmm_read (unsigned int laddress)
 {
-  char c = '!';
+  char c;
   read_count++;
   /* ¡ TODO: COMPLÉTER ! */
     unsigned int page = laddress / 256;

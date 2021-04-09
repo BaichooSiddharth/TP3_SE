@@ -35,7 +35,7 @@ void pm_download_page (unsigned int page_number, unsigned int frame_number)
   while(count < size_backing_store && count < end_bs){
       char_read = fgetc(pm_backing_store);
       if(count >= start_bs){
-          pm_memory[start_pm + (count - start_bs)] = char_read;
+          pm_memory[start_pm + (count - start_bs)] = (char) char_read;
       }
       count++;
   }

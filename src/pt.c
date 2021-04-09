@@ -29,7 +29,7 @@ void pt_init (FILE *log)
 static int pt__lookup (unsigned int page_number)
 {
   if(page_table[page_number].valid){
-      return page_table[page_number].frame_number;
+      return (int)page_table[page_number].frame_number;
   }
   return -1;
 }
