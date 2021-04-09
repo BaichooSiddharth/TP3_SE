@@ -39,8 +39,80 @@ static void vmm_log_command (FILE *out, const char *command,
 struct Frame {
     unsigned int page;
     int count;
+    bool dirty;
 };
 struct Frame frames[NUM_FRAMES];
+
+struct node {
+    unsigned int frame;
+    unsigned int page;
+    struct node *next;
+};
+
+struct buffer {
+    struct node *first;
+    struct node *last;
+    int length;
+};
+
+static void buffer_add_first( struct buffer *t, int frameNumber , int pageNumber ) {
+    struct node *new_node;
+    new_node->next = t->first;
+    new_node->frame = frameNumber;
+    new_node->page = pageNumber;
+
+    t->first = new_node;
+    t->length++;
+
+}
+
+void buffer_add_last( struct buffer *t, int frameNumber , int pageNumber ){
+    struct node *new_node;
+    new_node->next=NULL;
+    new_node->frame = frameNumber;
+    new_node->page = pageNumber;
+
+    t->last->next = new_node;
+    t->last = new_node;
+    t->length++;
+}
+
+int buffer_lookup( struct buffer *t, int frameNumber ){
+
+    struct node *current = t->first;
+
+    if( current->frame == frameNumber ){
+
+        return current->page;
+    }
+
+    else {
+        for (int i = 1; i < t->length ; i++) {
+
+            if ( current->next->frame == frameNumber ) {
+                struct node *temp = t->first;
+
+                t->first = current->next;
+                current->next = current->next->next;
+                t->first->next = temp;
+
+                return t->first->page;
+            }
+        }
+
+        return -1;
+    }
+}
+
+struct buffer buffer_init ( int length ){
+    struct buffer new;
+
+    for( int i = 0 ; i < length ; i++ ){
+        buffer_add_first(&new,NULL,NULL);
+    }
+
+    return new;
+}
 
 static int findFrameNumber(unsigned int page) {
     int frameNumber = tlb_lookup(page, 0);
@@ -48,6 +120,7 @@ static int findFrameNumber(unsigned int page) {
         frameNumber = pt_lookup(page);
         if (frameNumber < 0) {
             // Page fault, finding the least used frame as the new host for the requested page
+
             int leastUsedFrame = 0;
             for (int i = 0; i < NUM_FRAMES; i++) {
                 if (frames[i].count == 0) {
@@ -58,7 +131,7 @@ static int findFrameNumber(unsigned int page) {
             frameNumber = leastUsedFrame;
 
             // If usage is detected, store page data in the backing store
-            if (frames[frameNumber].count > 0) {
+            if (frames[frameNumber].dirty) {
                 pm_backup_page(leastUsedFrame, frames[frameNumber].page);
                 pt_unset_entry(frames[frameNumber].page);
                 frames[frameNumber].count = 0;
@@ -97,11 +170,12 @@ char vmm_read (unsigned int laddress)
 void vmm_write (unsigned int laddress, char c)
 {
   write_count++;
-  /* ¡ TODO: COMPLÉTER ! */
+
     unsigned int page = laddress / 256;
     unsigned int offset = laddress % 256;
 
     int frameNumber = findFrameNumber(page);
+    frames[frameNumber].dirty = true;
 
     unsigned int physAddress = frameNumber * PAGE_FRAME_SIZE + offset;
     pm_write(physAddress, c);
