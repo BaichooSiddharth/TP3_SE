@@ -21,7 +21,7 @@ static unsigned int tlb_hit_count = 0;
 static unsigned int tlb_miss_count = 0;
 static unsigned int tlb_mod_count = 0;
 
-int clockHand = 0; // Variable used for clock algorithm
+int tlbClockHand = 0; // Variable used for clock algorithm
 
 /* Initialise le TLB, et indique où envoyer le log des accès.  */
 void tlb_init (FILE *log)
@@ -52,9 +52,9 @@ static int tlb__lookup (unsigned int page_number, bool write)
 static void tlb__add_entry (unsigned int page_number,
                             unsigned int frame_number, bool readonly)
 {
-    int bestEntryId = clockHand;
+    int bestEntryId = tlbClockHand;
     bool foundBestVictim = false; bool foundGoodVictim = false; bool foundPoorVictim = false;
-    for (int i = clockHand; i - clockHand < TLB_NUM_ENTRIES; i++) {
+    for (int i = tlbClockHand; i - tlbClockHand < TLB_NUM_ENTRIES; i++) {
         int ri = i % TLB_NUM_ENTRIES; // Relative i
         if (!tlb_entries[ri].page_number || tlb_entries[ri].frame_number == frame_number) {
             bestEntryId = ri;
@@ -72,7 +72,7 @@ static void tlb__add_entry (unsigned int page_number,
             tlb_entries[ri].referenced = false;
         }
     }
-    clockHand = bestEntryId + 1;
+    tlbClockHand = (bestEntryId + 1) % TLB_NUM_ENTRIES;
 
     tlb_entries[bestEntryId].page_number = page_number;
     tlb_entries[bestEntryId].frame_number = (int) frame_number;

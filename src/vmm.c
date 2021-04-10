@@ -38,8 +38,10 @@ static void vmm_log_command (FILE *out, const char *command,
 
 struct Frame {
     unsigned int page;
-    int count;
+    bool readonly;
+    bool referenced;
     bool dirty;
+    bool isUsed;
 };
 struct Frame frames[NUM_FRAMES];
 /*
@@ -114,40 +116,54 @@ struct buffer buffer_init ( int length ){
     return new;
 }
 */
+
+int pageClockHand = 0; // Variable used for clock algorithm
+
 static int findFrameNumber(unsigned int page, bool write) {
     int frameNumber = tlb_lookup(page, write);
     if (frameNumber < 0) {
         frameNumber = pt_lookup(page);
         if (frameNumber < 0) {
             // Page fault, finding the least used frame as the new host for the requested page
-
-            int leastUsedFrame = 0;
-            for (int i = 0; i < NUM_FRAMES; i++) {
-                if (frames[i].count == 0) {
-                    leastUsedFrame = i;
+            int bestEntryId = pageClockHand;
+            bool foundGoodVictim = false; bool foundPoorVictim = false;
+            for (int i = pageClockHand; i - pageClockHand < NUM_FRAMES; i++) {
+                int ri = i % NUM_FRAMES; // Relative i
+                if (!frames[ri].isUsed || (frames[ri].readonly && !frames[ri].referenced)) {
+                    bestEntryId = ri;
                     break;
-                } else if (frames[i].count < frames[leastUsedFrame].count) leastUsedFrame = i;
+                } else if (!frames[ri].referenced) {
+                    bestEntryId = ri;
+                    foundGoodVictim = true;
+                } else if (!foundGoodVictim && frames[ri].readonly) {
+                    bestEntryId = ri;
+                    foundPoorVictim = true;
+                } else if (!foundGoodVictim && !foundPoorVictim) {
+                    frames[ri].referenced = false;
+                }
             }
-            frameNumber = leastUsedFrame;
+            pageClockHand = (bestEntryId + 1) % NUM_FRAMES;
+            frameNumber = bestEntryId;
 
             // If usage is detected, store page data in the backing store
             if (frames[frameNumber].dirty) {
-                pm_backup_page(leastUsedFrame, frames[frameNumber].page);
+                pm_backup_page(frameNumber, frames[frameNumber].page);
                 pt_unset_entry(frames[frameNumber].page);
-                frames[frameNumber].count = 0;
             }
 
             pm_download_page(page, frameNumber);
             tlb_add_entry(page, frameNumber, write);
             pt_set_entry(page, frameNumber);
             frames[frameNumber].page = page;
+            frames[frameNumber].readonly = pt_readonly_p(page);
             if (write) {
                 pt_set_readonly(page, false);
                 frames[frameNumber].dirty = true;
             }
+            frames[frameNumber].isUsed = true;
         }
     }
-    frames[frameNumber].count++;
+    frames[frameNumber].referenced = true;
 
     return frameNumber;
 }
