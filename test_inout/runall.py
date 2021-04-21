@@ -16,7 +16,7 @@ def shell(cmd):
         program_output = subprocess.check_output(cmd, shell=True, universal_newlines=True, stderr=subprocess.STDOUT)
     except Exception as e:
         program_output = e.output
-    print(program_output)
+    #print(program_output)
     return program_output.strip()
 
 valgrind_output = ""
