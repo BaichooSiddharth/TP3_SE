@@ -49,7 +49,11 @@ def run(input_cmd, in_ours=False):
     except:
         valgrind_output += "definitely lost: 9\n\n"
 
-    program_output, vmm_report = program_output.split("DICO_SEP")
+    try:
+        program_output, vmm_report = program_output.split("DICO_SEP")
+    except Exception as e:
+        e.reason = program_output
+        raise e
 
     def str2num(str): return float(str.replace("%", "")) if "%" in str else int(str)
     vmm_report = {x.split(":")[0]: str2num(x.split(":")[1]) for x in vmm_report.strip().split("\n")}
@@ -89,9 +93,16 @@ def run(input_cmd, in_ours=False):
     #calls = [line2call(x) for x in program_output.strip().split("\n")]
 
     def get_bs():
-        with open("bs.txt", "r") as f:
-            r = f.read()
-        return r.strip()
+        try:
+            with open("bs.txt", "r") as f:
+                r = f.read()
+            return r.strip()
+        except Exception as e:
+            print(e)
+            print("retrying with rb")
+            with open("bs.txt", "rb") as f:
+                r = f.read()
+            return r.strip()
 
     return None, vmm_report, get_bs()
 
@@ -118,25 +129,39 @@ print("GRADE IS OUT OF 120!!!!!!!!")
 
 @executable
 def _1():
-    print("Is tlb test_inout good?")
-    _, report, _ = run("../../src/command_tlb.in")
-    if report["tlbchanges"] <= 8:
-        print(f"\tIt isn't. Only {report['tlbchanges']} changes for tlb size 8")
-    else:
-        print("\tIt is.")
-        return good(10)
-    return 0
+    try:
+        print("Is tlb test_inout good?")
+        _, report, _ = run("../../src/command_tlb.in")
+        if report["tlbchanges"] <= 8:
+            print(f"\tIt isn't. Only {report['tlbchanges']} changes for tlb size 8")
+        else:
+            print("\tIt is.")
+            return good(10)
+        return 0
+    except Exception as e:
+        print("FAILED:")
+        try:
+            print(e.reason)
+        except:
+            print(e)
 
 @executable
 def _2():
     print("Is pt test_inout good?")
-    _, report, _ = run("../../src/command_pt.in")
-    if report["tlbchanges"] <= 32:
-        print(f"\tIt isn't. Only {report['ptchanges']} changes for tlb size 32")
-    else:
-        print("\tIt is.")
-        return good(10)
-    return 0
+    try:
+        _, report, _ = run("../../src/command_pt.in")
+        if report["tlbchanges"] <= 32:
+            print(f"\tIt isn't. Only {report['ptchanges']} changes for tlb size 32")
+        else:
+            print("\tIt is.")
+            return good(10)
+        return 0
+    except Exception as e:
+        print("FAILED:")
+        try:
+            print(e.reason)
+        except:
+            print(e)
 
 print("Tests 1 and 2 go together!")
 
@@ -208,40 +233,53 @@ def scale(real, best, mid, worst):
 @executable
 def _3():
     print("How's your tlb replacement algorithm?")
+    try:
+        tests = []
+        nb_tests = 1
+        for i in range(nb_tests):
+            best, mid, worst = call_baselines(f"../cmds/__tlb{i}__.in", True)
+            _, report, _ = run(f"__tlb{i}__.in")
+            tlbmisses = report["tlbmisses"]
 
-    tests = []
-    nb_tests = 1
-    for i in range(nb_tests):
-        best, mid, worst = call_baselines(f"../cmds/__tlb{i}__.in", True)
-        _, report, _ = run(f"__tlb{i}__.in")
-        tlbmisses = report["tlbmisses"]
-
-        if tlbmisses <= best / 2:
-            tests.append(0)
-        else:
-            tests.append(scale(tlbmisses, best, mid, worst))
+            if tlbmisses <= best / 2:
+                tests.append(0)
+            else:
+                tests.append(scale(tlbmisses, best, mid, worst))
 
 
-    return good(10*np.mean(np.array(tests)))
+        return good(10*np.mean(np.array(tests)))
+    except Exception as e:
+        print("FAILED:")
+        try:
+            print(e.reason)
+        except:
+            print(e)
 
 
 @executable
 def _4():
     print("How's your pt replacement algorithm?")
 
-    tests = []
-    nb_tests = 1
-    for i in range(nb_tests):
-        best, mid, worst = call_baselines(f"../cmds/__pt{i}__.in", False)
-        _, report, _ = run(f"__pt{i}__.in")
-        tlbmisses = report["pagefaults"]
+    try:
+        tests = []
+        nb_tests = 1
+        for i in range(nb_tests):
+            best, mid, worst = call_baselines(f"../cmds/__pt{i}__.in", False)
+            _, report, _ = run(f"__pt{i}__.in")
+            tlbmisses = report["pagefaults"]
 
-        if tlbmisses <= best / 2:
-            tests.append(0)
-        else:
-            tests.append(scale(tlbmisses, best, mid, worst))
+            if tlbmisses <= best / 2:
+                tests.append(0)
+            else:
+                tests.append(scale(tlbmisses, best, mid, worst))
 
-    return good(10*np.mean(np.array(tests)))
+        return good(10*np.mean(np.array(tests)))
+    except Exception as e:
+        print("FAILED:")
+        try:
+            print(e.reason)
+        except:
+            print(e)
 
 print("Tests 1 and 4 go together")
 
@@ -253,10 +291,17 @@ def _5():
 
     for file in os.listdir("cmds"):
         with directory("tests_build"):
-            t_calls, t_report, t_bs = run(file, False)
-            o_calls, o_report, o_bs = run(file, True)
-            if t_bs == o_bs:
-                successes += 1
+            try:
+                t_calls, t_report, t_bs = run(file, False)
+                o_calls, o_report, o_bs = run(file, True)
+                if t_bs == o_bs:
+                    successes += 1
+            except Exception as e:
+                print("FAILED:")
+                try:
+                    print(e.reason)
+                except:
+                    print(e)
 
     return good(successes/nb_tests * 20)
 
