@@ -333,7 +333,8 @@ print(f"Points lost with Valgrind: {pts_lost}")
 
 with directory("../test_check"):
     print("And now, for the checks tests:")
-    out = print(shell("make alltests"))
+    out = shell("make alltests")
+    print(out)
     out2 = re.search(r"SUBGRADE:\{(.+)\}", out).group(1)
 
     subgrade = float(out2)*3*20
