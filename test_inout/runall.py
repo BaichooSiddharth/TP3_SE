@@ -54,6 +54,7 @@ def run(input_cmd, in_ours=False):
     def str2num(str): return float(str.replace("%", "")) if "%" in str else int(str)
     vmm_report = {x.split(":")[0]: str2num(x.split(":")[1]) for x in vmm_report.strip().split("\n")}
 
+    """
     class Call:
         def __init__(self, is_reading, byte, addr, p, o, f, pa):
             self.is_reading = is_reading
@@ -67,6 +68,7 @@ def run(input_cmd, in_ours=False):
         def __repr__(self): return self.__str__().replace(", ", "_")
 
     def line2call(line):
+        print(line)
         line = line.strip()
         line = line.replace("[", " ").replace("]", " ").replace("@", " ").replace(",", "").replace(":", "")
         line = re.sub(r"\s+", " ", line)
@@ -82,16 +84,16 @@ def run(input_cmd, in_ours=False):
         f = aftereq(line[5])
         pa = aftereq(line[6])
 
-        return Call(mode, byte, addr, p, o, f, pa)
+        return Call(mode, byte, addr, p, o, f, pa)"""
 
-    calls = [line2call(x) for x in program_output.strip().split("\n")]
+    #calls = [line2call(x) for x in program_output.strip().split("\n")]
 
     def get_bs():
         with open("bs.txt", "r") as f:
             r = f.read()
         return r.strip()
 
-    return calls, vmm_report, get_bs()
+    return None, vmm_report, get_bs()
 
 #with directory("tests_build"):
 #    run("__1__.in")
