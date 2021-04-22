@@ -296,6 +296,9 @@ def _5():
                 o_calls, o_report, o_bs = run(file, True)
                 if t_bs == o_bs:
                     successes += 1
+                else:
+                    print("Your output, ", t_bs)
+                    print("Didn't match the expected one:", o_bs)
             except Exception as e:
                 print("FAILED:")
                 try:
@@ -329,7 +332,8 @@ pts_lost = pts_lost * 120
 print(f"Points lost with Valgrind: {pts_lost}")
 
 with directory("../test_check"):
-    out = shell("make alltests")
+    print("And now, for the checks tests:")
+    out = print(shell("make alltests"))
     out2 = re.search(r"SUBGRADE:\{(.+)\}", out).group(1)
 
     subgrade = float(out2)*3*20
