@@ -73,6 +73,14 @@ DEFINE_TEST(test_pt_4) {
     for(int i=0; i<32; i++) ck_assert_int_eq(pt_lookup(i) < 0, 1);
 } END_TEST
 
+
+DEFINE_TEST(test_pt_4) {
+    for(int i=0; i<32; i++) pt_set_entry(i+120, i);
+    for(int i=0; i<32; i++) ck_assert_int_eq(pt_lookup(i+120), i);
+    for(int i=0; i<32; i++) pt_unset_entry(i+120);
+    for(int i=0; i<32; i++) ck_assert_int_eq(pt_lookup(i+120) < 0, 1);
+} END_TEST
+
 DEFINE_TEST(test_tlb_1) {
     tlb_add_entry(2, 3, 1);
     ck_assert_int_eq(tlb_lookup(2, 1), 3);
@@ -83,8 +91,13 @@ DEFINE_TEST(test_tlb_2) {
 } END_TEST
 
 DEFINE_TEST(test_tlb_3) {
-    for(int i=0; i<8; i++) tlb_add_entry(i, i+2, 1);
-    for(int i=0; i<8; i++) ck_assert_int_eq(tlb_lookup(i, 1), i+2);
+    for(int i=0; i<8; i++) tlb_add_entry(i, i, 1);
+    for(int i=0; i<8; i++) ck_assert_int_eq(tlb_lookup(i, 1), i);
+} END_TEST
+
+DEFINE_TEST(test_tlb_3) {
+    for(int i=0; i<8; i++) tlb_add_entry(i, i+16, 1);
+    for(int i=0; i<8; i++) ck_assert_int_eq(tlb_lookup(i, 1), i+16);
 } END_TEST
 
 int main(int argc, char *argv[]) {
