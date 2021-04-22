@@ -297,8 +297,7 @@ def _5():
                 if t_bs == o_bs:
                     successes += 1
                 else:
-                    print("Your output, ", t_bs)
-                    print("Didn't match the expected one:", o_bs)
+                    print("Your output didn't match the expected one.")
             except Exception as e:
                 print("FAILED:")
                 try:
