@@ -2,9 +2,6 @@ clean:
 	sudo rm -rf tests_build valgrind.log
 
 install: clean
-	cd ../test_fix && python3 fixer.py
-	echo temp
-	sleep 20
 	mkdir tests_build || true
 	pip3 install pyyaml numpy
 	sudo apt-get install valgrind -y
