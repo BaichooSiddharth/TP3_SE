@@ -1,5 +1,6 @@
 clean:
 	sudo rm -rf tests_build valgrind.log
+	cd ../src && rm -rf parse* TP3 tp3
 
 install: clean
 	mkdir tests_build || true
