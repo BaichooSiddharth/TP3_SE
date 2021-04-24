@@ -19,6 +19,11 @@ def shell(cmd):
     #print(program_output)
     return program_output.strip()
 
+pm_was_failed = False
+def failed_pm():
+    global pm_was_failed
+    pm_was_failed = True
+
 valgrind_output = ""
 def run(input_cmd, in_ours=False):
     global valgrind_output
@@ -94,15 +99,19 @@ def run(input_cmd, in_ours=False):
 
     def get_bs():
         try:
-            with open("bs.txt", "r") as f:
+            with open("bs.txt", "rb") as f:
                 r = f.read()
+            if b"\x00" in r:
+                failed_pm()
+            r = r.replace(b"\x00", b"a").replace(b"\xff", b"a").decode("utf-8")
             return r.strip()
         except Exception as e:
             print(e)
             print("retrying with rb")
             with open("bs.txt", "rb") as f:
                 r = f.read()
-            return r.strip()
+            r = r.strip()
+            return r
 
     return None, vmm_report, get_bs()
 
